@@ -18,7 +18,9 @@ public:
     haus_mapApp();
     
     void setup();
-    void mouseDown( MouseEvent event );	
+    void mouseDown( MouseEvent event );
+    void mouseDrag(MouseEvent event);
+    void mouseUp( MouseEvent event );
     void update();
     void draw();
     void prepareSettings(Settings* settings);
@@ -31,6 +33,7 @@ private:
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
     Rectf editorToSurf(const Rectf& input);
+    Vec2f editorToSurf(const Vec2f& input);
 };
 
 const float HANDLE_SIZE = 4.0f;
@@ -66,6 +69,8 @@ void haus_mapApp::setup()
 
 void haus_mapApp::mouseDown( MouseEvent event )
 {
+    printf("Mousedown");
+    mActivePoint = NULL;
     const Vec2f ev_pos(event.getX(), event.getY());
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
@@ -78,6 +83,17 @@ void haus_mapApp::mouseDown( MouseEvent event )
             }
         }
     }
+}
+
+void haus_mapApp::mouseDrag(MouseEvent event)
+{
+    if (mActivePoint)
+        *mActivePoint = editorToSurf(Vec2f(event.getX(), event.getY()));
+}
+
+void haus_mapApp::mouseUp( MouseEvent event )
+{
+    mActivePoint = NULL;
 }
 
 void haus_mapApp::update()
@@ -100,6 +116,14 @@ PolyLine<Vec2f> haus_mapApp::surfToEditor(const PolyLine<Vec2f>& input)
         result.push_back(surfToEditor(*i));
     }
     result.setClosed();
+    return result;
+}
+
+Vec2f haus_mapApp::editorToSurf(const Vec2f& input)
+{
+    Vec2f result;
+    result.x = (input.x - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
+    result.y = (input.y - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
     return result;
 }
 
