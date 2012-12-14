@@ -2,6 +2,7 @@
 #include "cinder/app/AppBasic.h"
 #include "cinder/gl/gl.h"
 #include "cinder/gl/Texture.h"
+#include "cinder/TriMesh.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -9,8 +10,7 @@ using namespace std;
 
 struct QuadSurface
 {
-    // We assume 4 coords
-    PolyLine<Vec2f> coords;
+    TriMesh2d mesh;
 };
 
 class haus_mapApp : public AppBasic {
@@ -34,9 +34,10 @@ private:
     Vec2f surfToEditor(const Vec2f& input);
     Rectf editorToSurf(const Rectf& input);
     Vec2f editorToSurf(const Vec2f& input);
+    void addSurface();
 };
 
-const float HANDLE_SIZE = 4.0f;
+const float HANDLE_SIZE = 8.0f;
 
 haus_mapApp::haus_mapApp() :
     mActivePoint(NULL)
@@ -52,29 +53,52 @@ void haus_mapApp::prepareSettings(Settings* settings)
 void haus_mapApp::setup()
 {
     mInput = gl::Texture(loadImage(loadResource("test.jpg")));
-    QuadSurface q;
-    q.coords.push_back(Vec2f(0.0f, 0.0f));
-    q.coords.push_back(Vec2f(1.0f, 0.0f));
-    q.coords.push_back(Vec2f(1.0f, 1.0f));
-    q.coords.push_back(Vec2f(0.0f, 1.0f));
-    q.coords.setClosed();
-    mSurfaces.push_back(q);
+    addSurface();
     const Rectf editor_rect = getWindowBounds();
     mInputRect = Rectf(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
-//    setFullScreen(true);
-    DisplayRef dr = Display::getMainDisplay();
-    printf("display: w: %d, h: %d", dr->getWidth(), dr->getHeight());
-    printf("window: w: %d, h: %d", getWindowWidth(), getWindowHeight());
+}
+
+void haus_mapApp::addSurface()
+{
+    QuadSurface q;
+    const GLfloat texCoords[8] = {
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f };
+	
+	Vec2f verts[4];
+    verts[0] = Vec2f(0.0f, 1.0f) * 100.0f;
+    verts[1] = Vec2f(0.0f, 0.0f) * 100.0f;
+    verts[2] = Vec2f(1.0f, 0.0f) * 100.0f;
+    verts[3] = Vec2f(1.0f, 1.0f) * 100.0f;
+	
+	for (int i = 0; i < 4; i++)
+	{
+		q.mesh.appendVertex(verts[i]);
+		q.mesh.appendTexCoord(Vec2f(texCoords[i*2], texCoords[i*2+1]));
+	}
+	
+	// get the index of the vertex. not necessary with this example, but good practice
+	int vIdx0 = q.mesh.getNumVertices() - 4;
+	int vIdx1 = q.mesh.getNumVertices() - 3;
+	int vIdx2 = q.mesh.getNumVertices() - 2;
+	int vIdx3 = q.mesh.getNumVertices() - 1;
+	
+	// now create the triangles from the vertices
+	q.mesh.appendTriangle( vIdx0, vIdx1, vIdx2 );
+	q.mesh.appendTriangle( vIdx0, vIdx2, vIdx3 );
+    
+    mSurfaces.push_back(q);
 }
 
 void haus_mapApp::mouseDown( MouseEvent event )
 {
-    printf("Mousedown");
     mActivePoint = NULL;
     const Vec2f ev_pos(event.getX(), event.getY());
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
-        for (auto i = surf->coords.begin(); i != surf->coords.end(); i++)
+        for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
         {
             Vec2f v = surfToEditor(*i) - ev_pos;
             if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
@@ -151,11 +175,11 @@ void haus_mapApp::draw()
     // Surfaces
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
-        const PolyLine<Vec2f> quad0 = surfToEditor(surf->coords);
+        // Texture coords
+        PolyLine<Vec2f> quad0 = surfToEditor(surf->mesh.getTexCoords());        
         gl::color(1.0f, 1.0f, 1.0f);
         gl::draw(quad0);
-
-        for (auto i = surf->coords.begin(); i != surf->coords.end(); i++)
+        for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
         {
             if (&*i != mActivePoint)
                 gl::color(1.0f, 1.0f, 0.0f);
@@ -163,8 +187,13 @@ void haus_mapApp::draw()
                 gl::color(1.0f, 0.0f, 0.0f);
             gl::drawSolidCircle(surfToEditor(*i), HANDLE_SIZE);
         }
+        
+        // Output mesh
+        gl::color(1.0f, 1.0f, 1.0f);
+        mInput.enableAndBind();
+        gl::draw(surf->mesh);
+        mInput.unbind();
     }
 }
-
 
 CINDER_APP_BASIC( haus_mapApp, RendererGl )
