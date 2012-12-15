@@ -11,6 +11,7 @@
 #include "layer.h"
 #include "image_layer.h"
 #include "movie_layer.h"
+#include "color_block_layer.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -298,6 +299,19 @@ void haus_mapApp::keyDown( KeyEvent event )
                 addLayer(new MovieLayer(BASE_PATH / "glow.mov"));
             }
             break;
+        case KeyEvent::KEY_3 :
+            {
+                addLayer(new ColorBlockLayer(&mSurfaces));
+            }
+            break;
+        default :
+            {
+                for (auto layer = mCurrentLayers.begin(); layer != mCurrentLayers.end(); layer++)
+                {
+                    (*layer)->keyDown(event);
+                }
+            }
+            break;
 	}
 }
 void haus_mapApp::mouseDown( MouseEvent event )
@@ -464,7 +478,7 @@ void haus_mapApp::draw()
         for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
         {
             // Output mesh
-            gl::color(1.0f, 1.0f, 1.0f);
+            gl::color(Color::white());
             mFrame.getTexture().enableAndBind();
             gl::draw(surf->mesh);
             mFrame.getTexture().unbind();

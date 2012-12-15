@@ -21,6 +21,7 @@
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		C8CC86CF167D391E0033B7AB /* image_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86CE167D391E0033B7AB /* image_layer.cpp */; };
 		C8CC86D2167D39AA0033B7AB /* movie_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */; };
+		C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +49,8 @@
 		C8CC86CE167D391E0033B7AB /* image_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = image_layer.cpp; path = ../src/image_layer.cpp; sourceTree = "<group>"; };
 		C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = movie_layer.cpp; path = ../src/movie_layer.cpp; sourceTree = "<group>"; };
 		C8CC86D1167D39AA0033B7AB /* movie_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = movie_layer.h; path = ../src/movie_layer.h; sourceTree = "<group>"; };
+		C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = color_block_layer.cpp; path = ../src/color_block_layer.cpp; sourceTree = "<group>"; };
+		C8CC86D4167D3B930033B7AB /* color_block_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = color_block_layer.h; path = ../src/color_block_layer.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +121,8 @@
 		29B97314FDCFA39411CA2CEA /* haus_map */ = {
 			isa = PBXGroup;
 			children = (
+				C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */,
+				C8CC86D4167D3B930033B7AB /* color_block_layer.h */,
 				C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */,
 				C8CC86D1167D39AA0033B7AB /* movie_layer.h */,
 				29B97315FDCFA39411CA2CEA /* Headers */,
@@ -219,6 +224,7 @@
 				00BAE65A0E7ED9C10018A608 /* haus_mapApp.cpp in Sources */,
 				C8CC86CF167D391E0033B7AB /* image_layer.cpp in Sources */,
 				C8CC86D2167D39AA0033B7AB /* movie_layer.cpp in Sources */,
+				C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
