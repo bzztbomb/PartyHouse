@@ -45,6 +45,15 @@ private:
     Vec2f* mActiveOutputPoint;
     QuadSurface* mActiveSurface;
     Vec2f mDragStart;
+    enum OutputEditMode
+    {
+        oemStandard,
+        oemLowerLeft = 1, 
+        oemUpperLeft = 2,
+        oemUpperRight = 3,
+        oemLowerRight = 4,
+    };
+    OutputEditMode mOutputEditMode;
     
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
@@ -63,7 +72,8 @@ haus_mapApp::haus_mapApp() :
     mAppMode(amEditInput),
     mActiveInputPoint(NULL),
     mActiveOutputPoint(NULL),
-    mActiveSurface(NULL)
+    mActiveSurface(NULL),
+    mOutputEditMode(oemStandard)
 {
     
 }
@@ -228,6 +238,26 @@ void haus_mapApp::keyDown( KeyEvent event )
                 deleteCurrentSurface();
             }
             break;
+        case KeyEvent::KEY_LEFTBRACKET :
+            {
+                mOutputEditMode = (mOutputEditMode == oemStandard) ? oemUpperLeft : oemStandard;
+            }
+            break;
+        case KeyEvent::KEY_RIGHTBRACKET :
+            {
+                mOutputEditMode = (mOutputEditMode == oemStandard) ? oemUpperRight : oemStandard;
+            }
+            break;
+        case KeyEvent::KEY_SEMICOLON :
+            {
+                mOutputEditMode = (mOutputEditMode == oemStandard) ? oemLowerLeft : oemStandard;
+            }
+            break;
+        case KeyEvent::KEY_QUOTE :
+            {
+                mOutputEditMode = (mOutputEditMode == oemStandard) ? oemLowerRight : oemStandard;
+            }
+            break;
 	}
 }
 void haus_mapApp::mouseDown( MouseEvent event )
@@ -305,14 +335,26 @@ void haus_mapApp::mouseDrag(MouseEvent event)
         {
             *mActiveOutputPoint = Vec2f(event.getX(), event.getY());
         } else {
-            if (mActiveSurface)
+            if (mOutputEditMode == oemStandard)
             {
+                if (mActiveSurface)
+                {
+                    Vec2f cur_pos = Vec2f(event.getX(), event.getY());
+                    Vec2f diff_ss = cur_pos - mDragStart;
+                    mDragStart = cur_pos;
+                    for (auto i = mActiveSurface->mesh.getVertices().begin(); i != mActiveSurface->mesh.getVertices().end(); i++)
+                    {
+                        *i += diff_ss;
+                    }
+                }
+            } else {
                 Vec2f cur_pos = Vec2f(event.getX(), event.getY());
                 Vec2f diff_ss = cur_pos - mDragStart;
                 mDragStart = cur_pos;
-                for (auto i = mActiveSurface->mesh.getVertices().begin(); i != mActiveSurface->mesh.getVertices().end(); i++)
+                for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
                 {
-                    *i += diff_ss;
+                    int index = ((int) mOutputEditMode) - 1;
+                    surf->mesh.getVertices()[index] += diff_ss;
                 }
             }
         }
