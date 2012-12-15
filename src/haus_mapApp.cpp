@@ -38,6 +38,7 @@ private:
     Rectf mInputRect;
     gl::Texture mInput;
     vector<QuadSurface> mSurfaces;
+    
     Vec2f* mActiveInputPoint;
     Vec2f* mActiveOutputPoint;
     QuadSurface* mActiveSurface;
@@ -46,7 +47,9 @@ private:
     Vec2f surfToEditor(const Vec2f& input);
     Rectf editorToSurf(const Rectf& input);
     Vec2f editorToSurf(const Vec2f& input);
+    void clearActive();
     void addSurface();
+    void deleteCurrentSurface();
 };
 
 const float HANDLE_SIZE = 8.0f;
@@ -75,6 +78,13 @@ void haus_mapApp::resize( ResizeEvent event )
 {
     const Rectf editor_rect = getWindowBounds();
     mInputRect = Rectf(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
+}
+
+void haus_mapApp::clearActive()
+{
+    mActiveInputPoint = NULL;
+    mActiveOutputPoint = NULL;
+    mActiveSurface = NULL;
 }
 
 void haus_mapApp::addSurface()
@@ -111,6 +121,21 @@ void haus_mapApp::addSurface()
     mSurfaces.push_back(q);
 }
 
+void haus_mapApp::deleteCurrentSurface()
+{
+    if (mActiveSurface == NULL)
+        return;
+    for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+    {
+        if (&*surf == mActiveSurface)
+        {
+            mSurfaces.erase(surf);
+            clearActive();
+            return;
+        }
+    }
+}
+
 void haus_mapApp::keyDown( KeyEvent event )
 {
     switch(event.getCode())
@@ -127,13 +152,22 @@ void haus_mapApp::keyDown( KeyEvent event )
                 setFullScreen(!isFullScreen());
             }
             break;
+        case KeyEvent::KEY_a :
+            {
+                addSurface();
+            }
+            break;
+        case KeyEvent::KEY_BACKSPACE :
+        case KeyEvent::KEY_DELETE :
+            {
+                deleteCurrentSurface();
+            }
+            break;
 	}
 }
 void haus_mapApp::mouseDown( MouseEvent event )
 {
-    mActiveInputPoint = NULL;
-    mActiveOutputPoint = NULL;
-    mActiveSurface = NULL;
+    clearActive();
     const Vec2f ev_pos(event.getX(), event.getY());
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
