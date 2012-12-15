@@ -44,6 +44,7 @@ private:
     Vec2f* mActiveInputPoint;
     Vec2f* mActiveOutputPoint;
     QuadSurface* mActiveSurface;
+    Vec2f mDragStart;
     
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
@@ -80,8 +81,8 @@ void haus_mapApp::setup()
 
 void haus_mapApp::resize( ResizeEvent event )
 {
-    const Rectf editor_rect = getWindowBounds();
-    mInputRect = Rectf(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
+//    const Rectf editor_rect = getWindowBounds();
+    mInputRect = getWindowBounds();
 }
 
 void haus_mapApp::clearActive()
@@ -233,25 +234,38 @@ void haus_mapApp::mouseDown( MouseEvent event )
 {
     clearActive();
     const Vec2f ev_pos(event.getX(), event.getY());
+    mDragStart = ev_pos;
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
-        for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
+        if (mAppMode == amEditInput)
         {
-            Vec2f v = surfToEditor(*i) - ev_pos;
-            if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
+            for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
             {
-                mActiveInputPoint = &*i;
-                mActiveSurface = &*surf;
+                Vec2f v = surfToEditor(*i) - ev_pos;
+                if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
+                {
+                    mActiveInputPoint = &*i;
+                    mActiveSurface = &*surf;
+                }
+            }
+            if (mActiveSurface == NULL)
+            {
+                PolyLine2f points = surfToEditor(surf->mesh.getTexCoords());
+                if (points.contains(ev_pos))
+                    mActiveSurface = &*surf;
             }
         }
         
-        for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
+        if (mAppMode == amEditOutput)
         {
-            Vec2f v = *i - ev_pos;
-            if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
+            for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
             {
-                mActiveOutputPoint = &*i;
-                mActiveSurface = &*surf;
+                Vec2f v = *i - ev_pos;
+                if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
+                {
+                    mActiveOutputPoint = &*i;
+                    mActiveSurface = &*surf;
+                }
             }
         }
     }
@@ -259,8 +273,25 @@ void haus_mapApp::mouseDown( MouseEvent event )
 
 void haus_mapApp::mouseDrag(MouseEvent event)
 {
-    if (mActiveInputPoint)
-        *mActiveInputPoint = editorToSurf(Vec2f(event.getX(), event.getY()));
+    if (mAppMode == amEditInput)
+    {
+        if (mActiveInputPoint)
+        {
+            *mActiveInputPoint = editorToSurf(Vec2f(event.getX(), event.getY()));
+        } else {
+            if (mActiveSurface)
+            {
+                Vec2f cur_pos = Vec2f(event.getX(), event.getY());
+                Vec2f diff_ss = cur_pos - mDragStart;
+                Vec2f diff = editorToSurf(diff_ss);
+                mDragStart = cur_pos;
+                for (auto i = mActiveSurface->mesh.getTexCoords().begin(); i != mActiveSurface->mesh.getTexCoords().end(); i++)
+                {
+                    *i += diff;
+                }
+            }
+        }
+    }
     if (mActiveOutputPoint)
         *mActiveOutputPoint = Vec2f(event.getX(), event.getY());
 }
@@ -321,7 +352,7 @@ void haus_mapApp::draw()
         const Rectf editor_rect = getWindowBounds();
         const Rectf input_rect(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
         gl::color(Color::white());
-        gl::draw(mInput, input_rect);
+        gl::draw(mInput, mInputRect);
 
         // Surfaces
         for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
@@ -362,6 +393,14 @@ void haus_mapApp::draw()
         // Output mesh coords
         for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
         {
+            PolyLine<Vec2f> quad0 = surf->mesh.getVertices();
+            quad0.setClosed();
+            if (&*surf == mActiveSurface)
+                gl::color(0.0f, 1.0f, 1.0f);
+            else
+                gl::color(1.0f, 1.0f, 1.0f);
+            gl::draw(quad0);
+            
             for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
             {
                 if (&*i != mActiveOutputPoint)
