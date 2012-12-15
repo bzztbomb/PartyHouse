@@ -18,6 +18,7 @@ public:
     haus_mapApp();
     
     void setup();
+    void resize( ResizeEvent event );
     void keyDown( KeyEvent event );
     void mouseDown( MouseEvent event );
     void mouseDrag(MouseEvent event);
@@ -68,6 +69,10 @@ void haus_mapApp::setup()
 {
     mInput = gl::Texture(loadImage(loadResource("test.jpg")));
     addSurface();
+}
+
+void haus_mapApp::resize( ResizeEvent event )
+{
     const Rectf editor_rect = getWindowBounds();
     mInputRect = Rectf(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
 }
@@ -115,6 +120,11 @@ void haus_mapApp::keyDown( KeyEvent event )
                 mAppMode++;
                 if (mAppMode == amCount)
                     mAppMode = amEditInput;
+            }
+            break;
+        case KeyEvent::KEY_f :
+            {
+                setFullScreen(!isFullScreen());
             }
             break;
 	}
