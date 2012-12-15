@@ -12,9 +12,18 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 
+const fs::path BASE_PATH("/Users/bzztbomb/projects/haus_map/");
+
 struct QuadSurface
 {
     TriMesh2d mesh;
+};
+
+class Layer
+{
+public:
+    virtual ~Layer() {};
+    virtual void render(gl::Fbo* frame) {};
 };
 
 class haus_mapApp : public AppBasic {
@@ -58,8 +67,7 @@ private:
     
     // Input
     gl::Fbo mFrame;
-    qtime::MovieGl	mMovie;
-    gl::Texture mInput;
+    vector<Layer*> mCurrentLayers;
     
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
@@ -70,7 +78,70 @@ private:
     void deleteCurrentSurface();
     void saveSurfaces(const fs::path& surf_path);
     void loadSurfaces(const fs::path& surf_path);
+    
+    // Layer management
+    void clearLayers();
+    void addLayer(Layer* layer);
 };
+
+//
+// MovieLayer
+//
+class MovieLayer : public Layer
+{
+public:
+    MovieLayer(const fs::path& path);
+
+    // Layer
+    virtual void render(gl::Fbo* frame);
+private:
+    qtime::MovieGl	mMovie;
+};
+
+MovieLayer::MovieLayer(const fs::path& path)
+{
+    mMovie = qtime::MovieGl(path);
+    mMovie.setLoop();
+    mMovie.play();
+}
+
+void MovieLayer::render(gl::Fbo* frame)
+{
+    // Movie
+    gl::color(Color::white());
+    if (mMovie.getTexture())
+        gl::draw(mMovie.getTexture(), frame->getBounds());
+}
+
+//
+// ImageLayer
+//
+class ImageLayer : public Layer
+{
+public:
+    ImageLayer(const fs::path& path);
+    
+    // Layer
+    virtual void render(gl::Fbo* frame);
+private:
+    gl::Texture mTexture;
+};
+
+ImageLayer::ImageLayer(const fs::path& path)
+{
+    mTexture = gl::Texture(loadImage(path));
+}
+
+// Layer
+void ImageLayer::render(gl::Fbo* frame)
+{
+    gl::color(Color::white());
+    gl::draw(mTexture, frame->getBounds());
+}
+
+//
+// Main app
+//
 
 const float HANDLE_SIZE = 8.0f;
 
@@ -91,10 +162,6 @@ void haus_mapApp::prepareSettings(Settings* settings)
 
 void haus_mapApp::setup()
 {
-    mInput = gl::Texture(loadImage(loadResource("test.jpg")));
-    mMovie = qtime::MovieGl( "/Users/bzztbomb/projects/haus_map/reference.mov" );
-    mMovie.setLoop();
-    mMovie.play();
     addSurface();
 }
 
@@ -270,6 +337,21 @@ void haus_mapApp::keyDown( KeyEvent event )
                 mOutputEditMode = (mOutputEditMode == oemStandard) ? oemLowerRight : oemStandard;
             }
             break;
+        case KeyEvent::KEY_c :
+            {
+                clearLayers();
+            }
+            break;
+        case KeyEvent::KEY_1 :
+            {
+                addLayer(new ImageLayer(BASE_PATH / "align_helper.jpg"));
+            }
+            break;
+        case KeyEvent::KEY_2 :
+            {
+                addLayer(new MovieLayer(BASE_PATH / "reference.mov"));
+            }
+            break;
 	}
 }
 void haus_mapApp::mouseDown( MouseEvent event )
@@ -377,43 +459,6 @@ void haus_mapApp::mouseUp( MouseEvent event )
 {
 }
 
-Vec2f haus_mapApp::surfToEditor(const Vec2f& input)
-{
-    Vec2f v;
-    v.x = input.x * (mInputRect.x2 - mInputRect.x1) + mInputRect.x1;
-    v.y = input.y * (mInputRect.y2 - mInputRect.y1) + mInputRect.y1;
-    return v;
-}
-
-PolyLine<Vec2f> haus_mapApp::surfToEditor(const PolyLine<Vec2f>& input)
-{
-    PolyLine<Vec2f> result;
-    for (auto i = input.begin(); i != input.end(); i++)
-    {
-        result.push_back(surfToEditor(*i));
-    }
-    result.setClosed();
-    return result;
-}
-
-Vec2f haus_mapApp::editorToSurf(const Vec2f& input)
-{
-    Vec2f result;
-    result.x = (input.x - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-    result.y = (input.y - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
-    return result;
-}
-
-Rectf haus_mapApp::editorToSurf(const Rectf& input)
-{
-    Rectf result;
-    result.x1 = (input.x1 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-    result.x2 = (input.x2 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-    result.y1 = (input.y1 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
-    result.y2 = (input.y2 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
-    return result;
-}
-
 void haus_mapApp::update()
 {
     gl::SaveFramebufferBinding bindingSaver;
@@ -427,12 +472,10 @@ void haus_mapApp::update()
 	gl::clear( Color::black() );
     
     // Static texture
-    gl::color(Color::white());
-    gl::draw(mInput, mFrame.getBounds());
-
-    // Movie
-    if (mMovie.getTexture())
-        gl::draw(mMovie.getTexture(), mFrame.getBounds());
+    for (auto i = mCurrentLayers.begin(); i != mCurrentLayers.end(); i++)
+    {
+        (*i)->render(&mFrame);
+    }
     
     gl::popMatrices();    
 }
@@ -505,6 +548,63 @@ void haus_mapApp::draw()
             }
         }
     }
+}
+
+//
+// Layer management
+//
+void haus_mapApp::clearLayers()
+{
+    for (auto i = mCurrentLayers.begin(); i != mCurrentLayers.end(); i++)
+    {
+        delete (*i);
+    }
+    mCurrentLayers.clear();
+}
+
+void haus_mapApp::addLayer(Layer* layer)
+{
+    mCurrentLayers.push_back(layer);
+}
+
+//
+// Coordinate xforming
+//
+Vec2f haus_mapApp::surfToEditor(const Vec2f& input)
+{
+    Vec2f v;
+    v.x = input.x * (mInputRect.x2 - mInputRect.x1) + mInputRect.x1;
+    v.y = input.y * (mInputRect.y2 - mInputRect.y1) + mInputRect.y1;
+    return v;
+}
+
+PolyLine<Vec2f> haus_mapApp::surfToEditor(const PolyLine<Vec2f>& input)
+{
+    PolyLine<Vec2f> result;
+    for (auto i = input.begin(); i != input.end(); i++)
+    {
+        result.push_back(surfToEditor(*i));
+    }
+    result.setClosed();
+    return result;
+}
+
+Vec2f haus_mapApp::editorToSurf(const Vec2f& input)
+{
+    Vec2f result;
+    result.x = (input.x - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
+    result.y = (input.y - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
+    return result;
+}
+
+Rectf haus_mapApp::editorToSurf(const Rectf& input)
+{
+    Rectf result;
+    result.x1 = (input.x1 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
+    result.x2 = (input.x2 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
+    result.y1 = (input.y1 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
+    result.y2 = (input.y2 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
+    return result;
 }
 
 CINDER_APP_BASIC( haus_mapApp, RendererGl )
