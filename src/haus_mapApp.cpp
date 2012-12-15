@@ -7,24 +7,16 @@
 #include "cinder/gl/Texture.h"
 #include "cinder/gl/Fbo.h"
 #include "cinder/qtime/QuickTime.h"
+#include "quad.h"
+#include "layer.h"
+#include "image_layer.h"
+#include "movie_layer.h"
 
 using namespace ci;
 using namespace ci::app;
 using namespace std;
-
-const fs::path BASE_PATH("/Users/bzztbomb/projects/haus_map/");
-
-struct QuadSurface
-{
-    TriMesh2d mesh;
-};
-
-class Layer
-{
-public:
-    virtual ~Layer() {};
-    virtual void render(gl::Fbo* frame) {};
-};
+// TODO: Use this for .dat files
+const fs::path BASE_PATH("/Users/bzztbomb/projects/haus_map/current/");
 
 class haus_mapApp : public AppBasic {
 public:
@@ -73,7 +65,10 @@ private:
     Vec2f surfToEditor(const Vec2f& input);
     Rectf editorToSurf(const Rectf& input);
     Vec2f editorToSurf(const Vec2f& input);
+
     void clearActive();
+    void autoVert();
+    
     void addSurface();
     void deleteCurrentSurface();
     void saveSurfaces(const fs::path& surf_path);
@@ -83,61 +78,6 @@ private:
     void clearLayers();
     void addLayer(Layer* layer);
 };
-
-//
-// MovieLayer
-//
-class MovieLayer : public Layer
-{
-public:
-    MovieLayer(const fs::path& path);
-
-    // Layer
-    virtual void render(gl::Fbo* frame);
-private:
-    qtime::MovieGl	mMovie;
-};
-
-MovieLayer::MovieLayer(const fs::path& path)
-{
-    mMovie = qtime::MovieGl(path);
-    mMovie.setLoop();
-    mMovie.play();
-}
-
-void MovieLayer::render(gl::Fbo* frame)
-{
-    // Movie
-    gl::color(Color::white());
-    if (mMovie.getTexture())
-        gl::draw(mMovie.getTexture(), frame->getBounds());
-}
-
-//
-// ImageLayer
-//
-class ImageLayer : public Layer
-{
-public:
-    ImageLayer(const fs::path& path);
-    
-    // Layer
-    virtual void render(gl::Fbo* frame);
-private:
-    gl::Texture mTexture;
-};
-
-ImageLayer::ImageLayer(const fs::path& path)
-{
-    mTexture = gl::Texture(loadImage(path));
-}
-
-// Layer
-void ImageLayer::render(gl::Fbo* frame)
-{
-    gl::color(Color::white());
-    gl::draw(mTexture, frame->getBounds());
-}
 
 //
 // Main app
@@ -294,6 +234,12 @@ void haus_mapApp::keyDown( KeyEvent event )
                 setFullScreen(!isFullScreen());
             }
             break;
+        case KeyEvent::KEY_z :
+            {
+//                if (mAppMode == amEditOutput)
+//                    autoVert();
+            }
+            break;
         case KeyEvent::KEY_a :
             {
                 addSurface();
@@ -301,13 +247,13 @@ void haus_mapApp::keyDown( KeyEvent event )
             break;
         case KeyEvent::KEY_s :
             {
-                fs::path surf_path = getAppPath() / "surfaces.dat";
+                fs::path surf_path = BASE_PATH / "surfaces.dat";
                 saveSurfaces(surf_path);
             };
             break;
         case KeyEvent::KEY_l :
             {
-                fs::path surf_path = getAppPath() / "surfaces.dat";
+                fs::path surf_path = BASE_PATH / "surfaces.dat";
                 loadSurfaces(surf_path);
             };
             break;
@@ -349,7 +295,7 @@ void haus_mapApp::keyDown( KeyEvent event )
             break;
         case KeyEvent::KEY_2 :
             {
-                addLayer(new MovieLayer(BASE_PATH / "reference.mov"));
+                addLayer(new MovieLayer(BASE_PATH / "glow.mov"));
             }
             break;
 	}
@@ -546,6 +492,21 @@ void haus_mapApp::draw()
                     gl::color(1.0f, 0.0f, 0.0f);
                 gl::drawSolidCircle(*i, HANDLE_SIZE);
             }
+        }
+    }
+}
+
+void haus_mapApp::autoVert()
+{
+    // Output mesh coords
+    for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+    {
+        auto tc = surf->mesh.getTexCoords().begin();
+        for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
+        {
+            *i = *tc++;
+            i->x *= getWindowWidth();
+            i->y *= getWindowHeight();
         }
     }
 }
