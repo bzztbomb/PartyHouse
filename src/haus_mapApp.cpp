@@ -18,6 +18,7 @@ public:
     haus_mapApp();
     
     void setup();
+    void keyDown( KeyEvent event );
     void mouseDown( MouseEvent event );
     void mouseDrag(MouseEvent event);
     void mouseUp( MouseEvent event );
@@ -25,10 +26,20 @@ public:
     void draw();
     void prepareSettings(Settings* settings);
 private:
+    enum AppMode
+    {
+        amEditInput,
+        amEditOutput,
+        amPresent,
+        amCount,
+    };
+    AppMode mAppMode;
     Rectf mInputRect;
     gl::Texture mInput;
     vector<QuadSurface> mSurfaces;
-    Vec2f* mActivePoint;
+    Vec2f* mActiveInputPoint;
+    Vec2f* mActiveOutputPoint;
+    QuadSurface* mActiveSurface;
     
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
@@ -40,7 +51,10 @@ private:
 const float HANDLE_SIZE = 8.0f;
 
 haus_mapApp::haus_mapApp() :
-    mActivePoint(NULL)
+    mAppMode(amEditInput),
+    mActiveInputPoint(NULL),
+    mActiveOutputPoint(NULL),
+    mActiveSurface(NULL)
 {
     
 }
@@ -92,9 +106,24 @@ void haus_mapApp::addSurface()
     mSurfaces.push_back(q);
 }
 
+void haus_mapApp::keyDown( KeyEvent event )
+{
+    switch(event.getCode())
+    {
+		case KeyEvent::KEY_F1:
+            {
+                mAppMode++;
+                if (mAppMode == amCount)
+                    mAppMode = amEditInput;
+            }
+            break;
+	}
+}
 void haus_mapApp::mouseDown( MouseEvent event )
 {
-    mActivePoint = NULL;
+    mActiveInputPoint = NULL;
+    mActiveOutputPoint = NULL;
+    mActiveSurface = NULL;
     const Vec2f ev_pos(event.getX(), event.getY());
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
@@ -103,7 +132,18 @@ void haus_mapApp::mouseDown( MouseEvent event )
             Vec2f v = surfToEditor(*i) - ev_pos;
             if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
             {
-                mActivePoint = &*i;
+                mActiveInputPoint = &*i;
+                mActiveSurface = &*surf;
+            }
+        }
+        
+        for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
+        {
+            Vec2f v = *i - ev_pos;
+            if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
+            {
+                mActiveOutputPoint = &*i;
+                mActiveSurface = &*surf;
             }
         }
     }
@@ -111,13 +151,14 @@ void haus_mapApp::mouseDown( MouseEvent event )
 
 void haus_mapApp::mouseDrag(MouseEvent event)
 {
-    if (mActivePoint)
-        *mActivePoint = editorToSurf(Vec2f(event.getX(), event.getY()));
+    if (mActiveInputPoint)
+        *mActiveInputPoint = editorToSurf(Vec2f(event.getX(), event.getY()));
+    if (mActiveOutputPoint)
+        *mActiveOutputPoint = Vec2f(event.getX(), event.getY());
 }
 
 void haus_mapApp::mouseUp( MouseEvent event )
 {
-    mActivePoint = NULL;
 }
 
 void haus_mapApp::update()
@@ -167,32 +208,61 @@ void haus_mapApp::draw()
 	gl::clear( Color( 0, 0, 0 ) );
     
     //
-    const Rectf editor_rect = getWindowBounds();
-    const Rectf input_rect(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
-    gl::color(Color::white());
-    gl::draw(mInput, input_rect);
-
-    // Surfaces
-    for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+    if (mAppMode == amEditInput)
     {
-        // Texture coords
-        PolyLine<Vec2f> quad0 = surfToEditor(surf->mesh.getTexCoords());        
-        gl::color(1.0f, 1.0f, 1.0f);
-        gl::draw(quad0);
-        for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
+        const Rectf editor_rect = getWindowBounds();
+        const Rectf input_rect(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
+        gl::color(Color::white());
+        gl::draw(mInput, input_rect);
+
+        // Surfaces
+        for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
         {
-            if (&*i != mActivePoint)
-                gl::color(1.0f, 1.0f, 0.0f);
+            // Texture coords
+            PolyLine<Vec2f> quad0 = surfToEditor(surf->mesh.getTexCoords());
+            if (&*surf == mActiveSurface)
+                gl::color(0.0f, 1.0f, 1.0f);
             else
-                gl::color(1.0f, 0.0f, 0.0f);
-            gl::drawSolidCircle(surfToEditor(*i), HANDLE_SIZE);
+                gl::color(1.0f, 1.0f, 1.0f);
+            gl::draw(quad0);
+            for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
+            {
+                if (&*i != mActiveInputPoint)
+                    gl::color(1.0f, 1.0f, 0.0f);
+                else
+                    gl::color(1.0f, 0.0f, 0.0f);
+                gl::drawSolidCircle(surfToEditor(*i), HANDLE_SIZE);
+            }
         }
-        
+    }
+    
+    if ((mAppMode == amPresent) || (mAppMode == amEditOutput))
+    {
         // Output mesh
-        gl::color(1.0f, 1.0f, 1.0f);
-        mInput.enableAndBind();
-        gl::draw(surf->mesh);
-        mInput.unbind();
+        for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+        {
+            // Output mesh
+            gl::color(1.0f, 1.0f, 1.0f);
+            mInput.enableAndBind();
+            gl::draw(surf->mesh);
+            mInput.unbind();
+        }
+    }
+    
+    if (mAppMode == amEditOutput)
+    {
+        // Output mesh coords
+        for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+        {
+            for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
+            {
+                if (&*i != mActiveOutputPoint)
+                    gl::color(1.0f, 1.0f, 0.0f);
+                else
+                    gl::color(1.0f, 0.0f, 0.0f);
+                gl::drawSolidCircle(*i, HANDLE_SIZE);
+            }
+        }
     }
 }
 
