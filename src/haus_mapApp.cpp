@@ -267,6 +267,12 @@ void haus_mapApp::mouseDown( MouseEvent event )
                     mActiveSurface = &*surf;
                 }
             }
+            if (mActiveSurface == NULL)
+            {
+                PolyLine2f points = surfToEditor(surf->mesh.getVertices());
+                if (points.contains(ev_pos))
+                    mActiveSurface = &*surf;
+            }
         }
     }
 }
@@ -292,8 +298,25 @@ void haus_mapApp::mouseDrag(MouseEvent event)
             }
         }
     }
-    if (mActiveOutputPoint)
-        *mActiveOutputPoint = Vec2f(event.getX(), event.getY());
+    
+    if (mAppMode == amEditOutput)
+    {
+        if (mActiveOutputPoint)
+        {
+            *mActiveOutputPoint = Vec2f(event.getX(), event.getY());
+        } else {
+            if (mActiveSurface)
+            {
+                Vec2f cur_pos = Vec2f(event.getX(), event.getY());
+                Vec2f diff_ss = cur_pos - mDragStart;
+                mDragStart = cur_pos;
+                for (auto i = mActiveSurface->mesh.getVertices().begin(); i != mActiveSurface->mesh.getVertices().end(); i++)
+                {
+                    *i += diff_ss;
+                }
+            }
+        }
+    }
 }
 
 void haus_mapApp::mouseUp( MouseEvent event )
