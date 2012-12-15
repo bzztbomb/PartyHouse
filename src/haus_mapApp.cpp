@@ -1,10 +1,11 @@
 #include "cinder/ImageIo.h"
-#include "cinder/app/AppBasic.h"
-#include "cinder/gl/gl.h"
-#include "cinder/gl/Texture.h"
 #include "cinder/TriMesh.h"
 #include "cinder/DataSource.h"
 #include "cinder/DataTarget.h"
+#include "cinder/app/AppBasic.h"
+#include "cinder/gl/gl.h"
+#include "cinder/gl/Texture.h"
+#include "cinder/gl/Fbo.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -55,6 +56,9 @@ private:
     };
     OutputEditMode mOutputEditMode;
     
+    // Input
+    gl::Fbo mFrame;
+    
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
     Rectf editorToSurf(const Rectf& input);
@@ -91,8 +95,11 @@ void haus_mapApp::setup()
 
 void haus_mapApp::resize( ResizeEvent event )
 {
-//    const Rectf editor_rect = getWindowBounds();
     mInputRect = getWindowBounds();
+    gl::Fbo::Format format;
+    int width = getWindowWidth();
+    int height = getWindowHeight();
+    mFrame = gl::Fbo(width, height, format);
 }
 
 void haus_mapApp::clearActive()
@@ -365,10 +372,6 @@ void haus_mapApp::mouseUp( MouseEvent event )
 {
 }
 
-void haus_mapApp::update()
-{
-}
-
 Vec2f haus_mapApp::surfToEditor(const Vec2f& input)
 {
     Vec2f v;
@@ -406,6 +409,24 @@ Rectf haus_mapApp::editorToSurf(const Rectf& input)
     return result;
 }
 
+void haus_mapApp::update()
+{
+    gl::SaveFramebufferBinding bindingSaver;
+    mFrame.bindFramebuffer();
+    gl::pushMatrices();
+    gl::setViewport(mFrame.getBounds());
+    gl::setMatricesWindow(mFrame.getBounds().getWidth(), mFrame.getBounds().getHeight());
+    gl::scale(1.0f, -1.0f);
+    gl::translate(0.0f, -getWindowHeight());
+
+	gl::clear( Color::black() );
+    
+    // Static texture
+    gl::color(Color::white());
+    gl::draw(mInput, mFrame.getBounds());
+    gl::popMatrices();
+}
+
 void haus_mapApp::draw()
 {
 	// clear out the window with black
@@ -414,10 +435,8 @@ void haus_mapApp::draw()
     //
     if (mAppMode == amEditInput)
     {
-        const Rectf editor_rect = getWindowBounds();
-        const Rectf input_rect(editor_rect.x1, editor_rect.y2 / 2, editor_rect.x2 / 2, editor_rect.y2);
         gl::color(Color::white());
-        gl::draw(mInput, mInputRect);
+        gl::draw(mFrame.getTexture(), mInputRect);
 
         // Surfaces
         for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
@@ -447,9 +466,9 @@ void haus_mapApp::draw()
         {
             // Output mesh
             gl::color(1.0f, 1.0f, 1.0f);
-            mInput.enableAndBind();
+            mFrame.getTexture().enableAndBind();
             gl::draw(surf->mesh);
-            mInput.unbind();
+            mFrame.getTexture().unbind();
         }
     }
     
