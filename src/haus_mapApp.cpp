@@ -341,7 +341,7 @@ void haus_mapApp::keyDown( KeyEvent event )
             {
                 clearLayers();
             }
-            break;
+            break;    
         case KeyEvent::KEY_1 :
             {
                 addLayer(new ImageLayer(BASE_PATH / "align_helper.jpg"));
