@@ -3,6 +3,8 @@
 #include "cinder/gl/gl.h"
 #include "cinder/gl/Texture.h"
 #include "cinder/TriMesh.h"
+#include "cinder/DataSource.h"
+#include "cinder/DataTarget.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -50,6 +52,8 @@ private:
     void clearActive();
     void addSurface();
     void deleteCurrentSurface();
+    void saveSurfaces(const fs::path& surf_path);
+    void loadSurfaces(const fs::path& surf_path);
 };
 
 const float HANDLE_SIZE = 8.0f;
@@ -136,6 +140,54 @@ void haus_mapApp::deleteCurrentSurface()
     }
 }
 
+void haus_mapApp::saveSurfaces(const fs::path& surf_path)
+{
+    DataTargetRef dt = DataTargetPath::createRef(surf_path);
+    OStreamRef stream = dt->getStream();
+    
+    stream->write(mSurfaces.size());
+    for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
+    {
+        TriMesh2d* t = &surf->mesh;
+        stream->write(t->getTexCoords().size());
+        stream->writeData(&t->getTexCoords()[0], t->getTexCoords().size() * sizeof(Vec2f));
+        stream->write(t->getVertices().size());
+        stream->writeData(&t->getVertices()[0], t->getVertices().size() * sizeof(Vec2f));
+        stream->write(t->getIndices().size());
+        stream->writeData(&t->getIndices()[0], t->getIndices().size() * sizeof(size_t));
+    }
+}
+
+void haus_mapApp::loadSurfaces(const fs::path& surf_path)
+{
+    mSurfaces.clear();
+    DataSourceRef ds = DataSourcePath::create(surf_path);
+    IStreamRef stream = ds->createStream();
+    
+    size_t sz;
+    stream->read(&sz);
+    for (size_t i = 0; i < sz; i++)
+    {
+        QuadSurface q;
+        size_t tc_sz;
+        stream->read(&tc_sz);
+        q.mesh.getTexCoords().resize(tc_sz);
+        stream->readData(&q.mesh.getTexCoords()[0], tc_sz * sizeof(Vec2f));
+        
+        size_t v_sz;
+        stream->read(&v_sz);
+        q.mesh.getVertices().resize(tc_sz);
+        stream->readData(&q.mesh.getVertices()[0], v_sz * sizeof(Vec2f));
+        
+        size_t i_sz;
+        stream->read(&i_sz);
+        q.mesh.getIndices().resize(i_sz);
+        stream->readData(&q.mesh.getIndices()[0], i_sz * sizeof(size_t));
+        
+        mSurfaces.push_back(q);
+    }
+}
+
 void haus_mapApp::keyDown( KeyEvent event )
 {
     switch(event.getCode())
@@ -156,6 +208,18 @@ void haus_mapApp::keyDown( KeyEvent event )
             {
                 addSurface();
             }
+            break;
+        case KeyEvent::KEY_s :
+            {
+                fs::path surf_path = getAppPath() / "surfaces.dat";
+                saveSurfaces(surf_path);
+            };
+            break;
+        case KeyEvent::KEY_l :
+            {
+                fs::path surf_path = getAppPath() / "surfaces.dat";
+                loadSurfaces(surf_path);
+            };
             break;
         case KeyEvent::KEY_BACKSPACE :
         case KeyEvent::KEY_DELETE :
