@@ -269,7 +269,7 @@ void haus_mapApp::mouseDown( MouseEvent event )
             }
             if (mActiveSurface == NULL)
             {
-                PolyLine2f points = surfToEditor(surf->mesh.getVertices());
+                PolyLine2f points = surf->mesh.getVertices();
                 if (points.contains(ev_pos))
                     mActiveSurface = &*surf;
             }
