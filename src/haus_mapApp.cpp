@@ -6,6 +6,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/gl/Texture.h"
 #include "cinder/gl/Fbo.h"
+#include "cinder/qtime/QuickTime.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -39,7 +40,6 @@ private:
     };
     AppMode mAppMode;
     Rectf mInputRect;
-    gl::Texture mInput;
     vector<QuadSurface> mSurfaces;
     
     Vec2f* mActiveInputPoint;
@@ -58,6 +58,8 @@ private:
     
     // Input
     gl::Fbo mFrame;
+    qtime::MovieGl	mMovie;
+    gl::Texture mInput;
     
     PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
     Vec2f surfToEditor(const Vec2f& input);
@@ -90,6 +92,9 @@ void haus_mapApp::prepareSettings(Settings* settings)
 void haus_mapApp::setup()
 {
     mInput = gl::Texture(loadImage(loadResource("test.jpg")));
+    mMovie = qtime::MovieGl( "/Users/bzztbomb/projects/haus_map/reference.mov" );
+    mMovie.setLoop();
+    mMovie.play();
     addSurface();
 }
 
@@ -424,7 +429,12 @@ void haus_mapApp::update()
     // Static texture
     gl::color(Color::white());
     gl::draw(mInput, mFrame.getBounds());
-    gl::popMatrices();
+
+    // Movie
+    if (mMovie.getTexture())
+        gl::draw(mMovie.getTexture(), mFrame.getBounds());
+    
+    gl::popMatrices();    
 }
 
 void haus_mapApp::draw()
