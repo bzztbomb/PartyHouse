@@ -10,6 +10,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/app/App.h"
 #include "cinder/Timeline.h"
+#include "cinder/Perlin.h"
 
 using namespace ci;
 using namespace std;
@@ -19,7 +20,9 @@ class RoofPattern
 {
 public:
     virtual ~RoofPattern() { }
+    
     virtual void update(cinder::Color* pixels, int mCols, int mRows) { };
+    virtual void reset() {};
 };
 
 //
@@ -40,7 +43,14 @@ public:
         mCurrIndex(0)
     {
         mSpread = 10.0f;
-        timeline().apply(&mCurrIndex, (int)((cols * rows)+mSpread), 5.0f);
+        reset();
+    }
+
+    virtual void reset()
+    {
+        mCurrIndex = 0;
+        // TODO: REMOVE HACK
+        timeline().apply(&mCurrIndex, (int)((30 * 10)+mSpread), 4.0f);
     }
     
     virtual ~ScanPattern()
@@ -52,6 +62,7 @@ public:
     
     virtual void update(cinder::Color* pixels, int mCols, int mRows)
     {
+        static bool debug = true;
         Color bright(0.98, 0.40, 0.1);
         Color dark(0.40, 0.98, 0.1);
         for (int i = 0; i < mCols * mRows; i++)
@@ -60,10 +71,57 @@ public:
             diff = min(1.0f, diff);
             pixels[i] = i<mCurrIndex ? bright.lerp(diff, dark) : Color::black();
         }
+        debug = false;
     }
 private:
     Anim<int> mCurrIndex;
     float mSpread;
+    Perlin mPerlin;
+};
+
+class SinPattern : public RoofPattern
+{
+public:
+    SinPattern() :
+        mT(0.0f),
+        mLastTime(timeline().getCurrentTime()),
+        mTimeMult(4)
+    {
+        
+    }
+    
+    float sin11(float t)
+    {
+        return (sin(t) + 1.0f) * 0.5f;
+    }
+    
+    virtual void update(cinder::Color* pixels, int mCols, int mRows)
+    {
+        mT += (timeline().getCurrentTime() - mLastTime) * mTimeMult;
+        mLastTime = timeline().getCurrentTime();
+        Color a(0.01, 0.01, 0.02);
+        Color b(0.5, 0.1, 0.9);
+        for (int y = 0; y < mRows; y++)
+        {
+            for (int x = 0; x < mCols; x++)
+            {
+                float x_sin = ((float) x / (float) mCols) * M_PI;
+                float modulate = sin11(mT) * sin11(x_sin);
+                float y_sin = ((float) y / (float) mRows) * M_PI;
+                modulate *= (sin11(mT) / mT) * sin11(y_sin);
+                pixels[y*mCols+x] = a.lerp(modulate, b);
+            }
+        }
+    }
+    
+    virtual void reset()
+    {
+        mT = 0.0f;
+    }
+private:
+    float mT;
+    float mLastTime;
+    float mTimeMult;
 };
 
 RoofLayer::RoofLayer(QuadSurface* roof_surface) :
@@ -140,6 +198,9 @@ void RoofLayer::buildGrid(cinder::gl::Fbo* frame)
             
             tile.appendTriangle( vIdx0, vIdx1, vIdx2 );
             tile.appendTriangle( vIdx0, vIdx2, vIdx3 );
+            
+            mLines[y*GRID_COLS+x] = tile.getVertices();
+            mLines[y*GRID_COLS+x].setClosed();
         }
     }
 
@@ -163,6 +224,8 @@ void RoofLayer::render(cinder::gl::Fbo* frame)
     {
         gl::color(mPixels[i]);
         gl::draw(mGrid[i]);
+        gl::color(Color::black());
+        gl::draw(mLines[i]);
     }
 }
 
@@ -182,7 +245,16 @@ void RoofLayer::scanPattern()
     activatePattern(new ScanPattern(GRID_ROWS, GRID_COLS));
 }
 
+void RoofLayer::sinPattern()
+{
+    activatePattern(new SinPattern());
+}
+
 void RoofLayer::keyDown( cinder::app::KeyEvent event )
 {
-    
+    if (event.getCode() == KeyEvent::KEY_SPACE)
+    {
+        if (mCurrPattern)
+            mCurrPattern->reset();
+    }
 }

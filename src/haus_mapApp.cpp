@@ -308,7 +308,31 @@ void haus_mapApp::keyDown( KeyEvent event )
         case KeyEvent::KEY_4 :
             {
                 if (mSurfaces.size() > 0)
-                    addLayer(new RoofLayer(&mSurfaces[0]));
+                {
+                    RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+                    rl->testPattern();
+                    addLayer(rl);
+                }
+            }
+            break;
+        case KeyEvent::KEY_5 :
+            {
+                if (mSurfaces.size() > 0)
+                {
+                    RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+                    rl->scanPattern();
+                    addLayer(rl);
+                }
+            }
+            break;
+        case KeyEvent::KEY_6 :
+            {
+                if (mSurfaces.size() > 0)
+                {
+                    RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+                    rl->sinPattern();
+                    addLayer(rl);
+                }
             }
             break;
         default :

@@ -27,12 +27,14 @@ public:
 
     void testPattern();
     void scanPattern();
+    void sinPattern();
     
     // Layer
     virtual void render(cinder::gl::Fbo* frame);
     virtual void keyDown( cinder::app::KeyEvent event );
 private:
     // Grid
+    cinder::PolyLine2f mLines[GRID_COLS * GRID_ROWS];
     cinder::TriMesh2d mGrid[GRID_COLS * GRID_ROWS];
     cinder::Color mPixels[GRID_COLS * GRID_ROWS];
     bool mGridInit;
