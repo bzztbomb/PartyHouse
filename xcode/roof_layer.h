@@ -21,9 +21,18 @@ public:
     virtual void render(cinder::gl::Fbo* frame);
     virtual void keyDown( cinder::app::KeyEvent event );
 private:
-    QuadSurface* mSurface;
+    enum {
+        GRID_COLS = 30,
+        GRID_ROWS = 10
+    };
+    cinder::TriMesh2d mGrid[GRID_COLS * GRID_ROWS];
+    bool mGridInit;
     
+    // Source surface
+    QuadSurface* mSurface;
+        
     cinder::Vec2f translate(const cinder::Vec2f& target, const std::vector<cinder::Vec2f>& corners);
+    void buildGrid(cinder::gl::Fbo* frame);
 };
 
 #endif /* defined(__haus_map__roof_layer__) */

@@ -13,7 +13,8 @@ using namespace ci;
 using namespace std;
 
 RoofLayer::RoofLayer(QuadSurface* roof_surface) :
-    mSurface(roof_surface)
+    mSurface(roof_surface),
+    mGridInit(false)
 {
     
 }
@@ -34,14 +35,13 @@ cinder::Vec2f RoofLayer::translate(const cinder::Vec2f& target, const std::vecto
     return pt;
 }
 
-// Layer
-void RoofLayer::render(cinder::gl::Fbo* frame)
+void RoofLayer::buildGrid(cinder::gl::Fbo* frame)
 {
+    vector<Vec2f> corners;
+
     float w = frame->getWidth();
     float h = frame->getHeight();
-    
-    vector<Vec2f> corners;
-    
+
     for (auto t = mSurface->mesh.getTexCoords().begin(); t != mSurface->mesh.getTexCoords().end(); t++)
     {
         Vec2f p = *t;
@@ -49,19 +49,25 @@ void RoofLayer::render(cinder::gl::Fbo* frame)
         p.y *= h;
         corners.push_back(p);
     }
-
-    for (int j = 0; j < 29*2; j+=2)
+    
+    const float x_unit = 1.0f / ((float) GRID_COLS - 1);
+    const float y_unit = 1.0f / (float) GRID_ROWS;
+    for (int y = 0; y < GRID_ROWS; y++)
     {
-        for (int i = 0; i < 5; i++)
+        const float xoffset = (y%2==0) ? -x_unit*0.5f : 0.0f;
+        for (int x = 0; x < GRID_COLS; x++)
         {
-            gl::color(Color::white());
-            TriMesh2d tile;
+            // Skip this tile if it's off roof
+            if ((x == GRID_COLS-1) && (y%2==1))
+                continue;
+            Vec2f ul((float) x * x_unit + xoffset, (float) y * y_unit);
+            ul.x = max(ul.x, 0.0f);
+            Vec2f ll(ul.x, ul.y + y_unit);
+            Vec2f ur(ul.x + x_unit, ul.y);
+            ur.x = min(ur.x, 1.0f);
+            Vec2f lr(ur.x, ur.y + y_unit);
             
-            Vec2f ll((float) j * 1.0f / 29.0f, 0.2f + 0.2f * (float) i);
-            Vec2f ul((float) j * 1.0f / 29.0f, 0.1f + 0.2f * (float) i);
-            Vec2f ur(ll.x + (1.0f / 29.0f), 0.1f + 0.2f * (float) i);
-            Vec2f lr(ll.x + (1.0f / 29.0f), 0.2f + 0.2f * (float) i);
-
+            TriMesh2d& tile = mGrid[y*GRID_COLS+x];
             tile.appendVertex(translate(ll, corners));
             tile.appendVertex(translate(ul, corners));
             tile.appendVertex(translate(ur, corners));
@@ -74,9 +80,23 @@ void RoofLayer::render(cinder::gl::Fbo* frame)
             
             tile.appendTriangle( vIdx0, vIdx1, vIdx2 );
             tile.appendTriangle( vIdx0, vIdx2, vIdx3 );
-            
-            gl::draw(tile);
         }
+    }
+}
+
+// Layer
+void RoofLayer::render(cinder::gl::Fbo* frame)
+{
+    if (!mGridInit)
+    {
+        buildGrid(frame);
+        mGridInit = true;
+    }
+    
+    for (int i = 0; i < GRID_COLS * GRID_ROWS; i++)
+    {
+        gl::color(i%2==0 ? Color::white() : Color(1.0, 0.0f, 1.0f));
+        gl::draw(mGrid[i]);
     }
 }
 
