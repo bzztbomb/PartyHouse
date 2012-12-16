@@ -12,11 +12,12 @@
 #include "image_layer.h"
 #include "movie_layer.h"
 #include "color_block_layer.h"
+#include "roof_layer.h"
 
 using namespace ci;
 using namespace ci::app;
 using namespace std;
-// TODO: Use this for .dat files
+
 const fs::path BASE_PATH("/Users/bzztbomb/projects/haus_map/current/");
 
 class haus_mapApp : public AppBasic {
@@ -302,6 +303,12 @@ void haus_mapApp::keyDown( KeyEvent event )
         case KeyEvent::KEY_3 :
             {
                 addLayer(new ColorBlockLayer(&mSurfaces));
+            }
+            break;
+        case KeyEvent::KEY_4 :
+            {
+                if (mSurfaces.size() > 0)
+                    addLayer(new RoofLayer(&mSurfaces[0]));
             }
             break;
         default :
