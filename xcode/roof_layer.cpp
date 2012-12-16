@@ -8,15 +8,75 @@
 
 #include "roof_layer.h"
 #include "cinder/gl/gl.h"
+#include "cinder/app/App.h"
+#include "cinder/Timeline.h"
 
 using namespace ci;
 using namespace std;
+using namespace ci::app;
+
+class RoofPattern
+{
+public:
+    virtual ~RoofPattern() { }
+    virtual void update(cinder::Color* pixels, int mCols, int mRows) { };
+};
+
+//
+class TestPattern : public RoofPattern
+{
+public:
+    virtual void update(cinder::Color* pixels, int mCols, int mRows)
+    {
+        for (int i = 0; i < mCols * mRows; i++)
+            pixels[i] = i%2==0 ? Color::white() : Color(1.0, 0.0f, 1.0f);
+    }
+};
+
+class ScanPattern : public RoofPattern
+{
+public:
+    ScanPattern(int cols, int rows) :
+        mCurrIndex(0)
+    {
+        mSpread = 10.0f;
+        timeline().apply(&mCurrIndex, (int)((cols * rows)+mSpread), 5.0f);
+    }
+    
+    virtual ~ScanPattern()
+    {
+        TimelineItemRef t = timeline().find(&mCurrIndex);
+        if (t != NULL)
+            timeline().remove(t);
+    }
+    
+    virtual void update(cinder::Color* pixels, int mCols, int mRows)
+    {
+        Color bright(0.98, 0.40, 0.1);
+        Color dark(0.40, 0.98, 0.1);
+        for (int i = 0; i < mCols * mRows; i++)
+        {
+            float diff = ((float) mCurrIndex - (float) i) / mSpread;
+            diff = min(1.0f, diff);
+            pixels[i] = i<mCurrIndex ? bright.lerp(diff, dark) : Color::black();
+        }
+    }
+private:
+    Anim<int> mCurrIndex;
+    float mSpread;
+};
 
 RoofLayer::RoofLayer(QuadSurface* roof_surface) :
     mSurface(roof_surface),
-    mGridInit(false)
+    mGridInit(false),
+    mCurrPattern(NULL)
 {
-    
+    scanPattern();
+}
+
+RoofLayer::~RoofLayer()
+{
+    delete mCurrPattern;
 }
 
 enum Corners
@@ -84,8 +144,7 @@ void RoofLayer::buildGrid(cinder::gl::Fbo* frame)
     }
 
     for (int i = 0; i < GRID_ROWS * GRID_COLS; i++)
-        mPixels[i] = i%2==0 ? Color::white() : Color(1.0, 0.0f, 1.0f);
-
+        mPixels[i] = Color::black();
 }
 
 // Layer
@@ -96,14 +155,31 @@ void RoofLayer::render(cinder::gl::Fbo* frame)
         buildGrid(frame);
         mGridInit = true;
     }
-    
-    
+  
+    if (mCurrPattern)
+        mCurrPattern->update(mPixels, GRID_COLS, GRID_ROWS);
     
     for (int i = 0; i < GRID_COLS * GRID_ROWS; i++)
     {
         gl::color(mPixels[i]);
         gl::draw(mGrid[i]);
     }
+}
+
+void RoofLayer::activatePattern(RoofPattern* p)
+{
+    if (mCurrPattern)
+        delete mCurrPattern;
+    mCurrPattern = p;
+}
+void RoofLayer::testPattern()
+{
+    activatePattern(new TestPattern());
+}
+
+void RoofLayer::scanPattern()
+{
+    activatePattern(new ScanPattern(GRID_ROWS, GRID_COLS));
 }
 
 void RoofLayer::keyDown( cinder::app::KeyEvent event )
