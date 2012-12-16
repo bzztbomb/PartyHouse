@@ -26,6 +26,7 @@ private:
         GRID_ROWS = 10
     };
     cinder::TriMesh2d mGrid[GRID_COLS * GRID_ROWS];
+    cinder::Color mPixels[GRID_COLS * GRID_ROWS];
     bool mGridInit;
     
     // Source surface

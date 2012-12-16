@@ -82,6 +82,10 @@ void RoofLayer::buildGrid(cinder::gl::Fbo* frame)
             tile.appendTriangle( vIdx0, vIdx2, vIdx3 );
         }
     }
+
+    for (int i = 0; i < GRID_ROWS * GRID_COLS; i++)
+        mPixels[i] = i%2==0 ? Color::white() : Color(1.0, 0.0f, 1.0f);
+
 }
 
 // Layer
@@ -93,9 +97,11 @@ void RoofLayer::render(cinder::gl::Fbo* frame)
         mGridInit = true;
     }
     
+    
+    
     for (int i = 0; i < GRID_COLS * GRID_ROWS; i++)
     {
-        gl::color(i%2==0 ? Color::white() : Color(1.0, 0.0f, 1.0f));
+        gl::color(mPixels[i]);
         gl::draw(mGrid[i]);
     }
 }
