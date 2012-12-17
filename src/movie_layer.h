@@ -17,10 +17,15 @@ class MovieLayer : public Layer
 public:
     MovieLayer(const cinder::fs::path& path);
     
+    void setColorCycle(bool val) { mColorCycle = val; }
+    
     // Layer
     virtual void render(cinder::gl::Fbo* frame);
+    virtual void keyDown(cinder::app::KeyEvent event);
 private:
     cinder::qtime::MovieGl	mMovie;
+    cinder::Color mColor;
+    bool mColorCycle;
 };
 
 #endif /* defined(__haus_map__movie_layer__) */

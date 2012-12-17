@@ -297,7 +297,9 @@ void haus_mapApp::keyDown( KeyEvent event )
             break;
         case KeyEvent::KEY_2 :
             {
-                addLayer(new MovieLayer(BASE_PATH / "glow.mov"));
+                MovieLayer* ml = new MovieLayer(BASE_PATH / "glow.mov");
+                ml->setColorCycle(true);
+                addLayer(ml);
             }
             break;
         case KeyEvent::KEY_3 :
@@ -333,6 +335,11 @@ void haus_mapApp::keyDown( KeyEvent event )
                     rl->sinPattern();
                     addLayer(rl);
                 }
+            }
+            break;
+        case KeyEvent::KEY_7 :
+            {
+                addLayer(new MovieLayer(BASE_PATH / "dancers.mov"));
             }
             break;
         default :
@@ -474,7 +481,7 @@ void haus_mapApp::update()
 void haus_mapApp::draw()
 {
 	// clear out the window with black
-	gl::clear( Color( 0, 0, 0 ) );
+	gl::clear( Color::black() );
     
     //
     if (mAppMode == amEditInput)
