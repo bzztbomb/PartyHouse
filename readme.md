@@ -13,10 +13,7 @@ This was written over 3 days, so it's not fancy.  It has the bare minimum of fea
 * Performance mode
 * Loading and saving mapping
 * Randomly colored quads
-* A roof quad that can contain:
-** A test pattern
-** A "VU" meter
-** A pulsed sin blob
+* A roof quad that can contain: a test pattern, "vu meter", pulsed sin blob
 * Plays movies (dancers and mice)
 
 ## Use / caveats
