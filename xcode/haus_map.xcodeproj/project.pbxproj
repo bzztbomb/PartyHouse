@@ -23,6 +23,7 @@
 		C8CC86D2167D39AA0033B7AB /* movie_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */; };
 		C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */; };
 		C8CC86D8167D43C70033B7AB /* roof_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D6167D43C70033B7AB /* roof_layer.cpp */; };
+		C8CC86DF167EC2500033B7AB /* vu_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86DD167EC2500033B7AB /* vu_layer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,6 +55,8 @@
 		C8CC86D4167D3B930033B7AB /* color_block_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = color_block_layer.h; path = ../src/color_block_layer.h; sourceTree = "<group>"; };
 		C8CC86D6167D43C70033B7AB /* roof_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = roof_layer.cpp; sourceTree = "<group>"; };
 		C8CC86D7167D43C70033B7AB /* roof_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = roof_layer.h; sourceTree = "<group>"; };
+		C8CC86DD167EC2500033B7AB /* vu_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = vu_layer.cpp; path = ../src/vu_layer.cpp; sourceTree = "<group>"; };
+		C8CC86DE167EC2500033B7AB /* vu_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vu_layer.h; path = ../src/vu_layer.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +127,8 @@
 		29B97314FDCFA39411CA2CEA /* haus_map */ = {
 			isa = PBXGroup;
 			children = (
+				C8CC86DD167EC2500033B7AB /* vu_layer.cpp */,
+				C8CC86DE167EC2500033B7AB /* vu_layer.h */,
 				C8CC86D6167D43C70033B7AB /* roof_layer.cpp */,
 				C8CC86D7167D43C70033B7AB /* roof_layer.h */,
 				C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */,
@@ -231,6 +236,7 @@
 				C8CC86D2167D39AA0033B7AB /* movie_layer.cpp in Sources */,
 				C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */,
 				C8CC86D8167D43C70033B7AB /* roof_layer.cpp in Sources */,
+				C8CC86DF167EC2500033B7AB /* vu_layer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

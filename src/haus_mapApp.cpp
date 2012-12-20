@@ -13,6 +13,7 @@
 #include "movie_layer.h"
 #include "color_block_layer.h"
 #include "roof_layer.h"
+#include "vu_layer.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -99,7 +100,7 @@ haus_mapApp::haus_mapApp() :
 
 void haus_mapApp::prepareSettings(Settings* settings)
 {
-    settings->setTitle("Hausu");
+    settings->setTitle("Party House!");
 }
 
 void haus_mapApp::setup()
@@ -238,8 +239,8 @@ void haus_mapApp::keyDown( KeyEvent event )
             break;
         case KeyEvent::KEY_z :
             {
-//                if (mAppMode == amEditOutput)
-//                    autoVert();
+                if (mAppMode == amEditOutput)
+                    autoVert();
             }
             break;
         case KeyEvent::KEY_a :
@@ -340,6 +341,16 @@ void haus_mapApp::keyDown( KeyEvent event )
         case KeyEvent::KEY_7 :
             {
                 addLayer(new MovieLayer(BASE_PATH / "dancers.mov"));
+            }
+            break;
+        case KeyEvent::KEY_8 :
+            {
+                addLayer(new VULayer());
+            }
+            break;
+        case KeyEvent::KEY_9 :
+            {
+                addLayer(new MovieLayer(BASE_PATH / "mouse.mov"));
             }
             break;
         default :

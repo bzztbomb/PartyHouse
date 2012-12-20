@@ -62,7 +62,6 @@ public:
     
     virtual void update(cinder::Color* pixels, int mCols, int mRows)
     {
-        static bool debug = true;
         Color bright(0.98, 0.40, 0.1);
         Color dark(0.40, 0.98, 0.1);
         for (int i = 0; i < mCols * mRows; i++)
@@ -71,7 +70,6 @@ public:
             diff = min(1.0f, diff);
             pixels[i] = i<mCurrIndex ? bright.lerp(diff, dark) : Color::black();
         }
-        debug = false;
     }
 private:
     Anim<int> mCurrIndex;
