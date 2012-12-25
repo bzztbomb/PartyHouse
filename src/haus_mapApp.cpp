@@ -26,7 +26,7 @@ public:
     haus_mapApp();
     
     void setup();
-    void resize( ResizeEvent event );
+    void resize( );
     void keyDown( KeyEvent event );
     void mouseDown( MouseEvent event );
     void mouseDrag(MouseEvent event);
@@ -108,7 +108,7 @@ void haus_mapApp::setup()
     addSurface();
 }
 
-void haus_mapApp::resize( ResizeEvent event )
+void haus_mapApp::resize( )
 {
     mInputRect = getWindowBounds();
     gl::Fbo::Format format;
