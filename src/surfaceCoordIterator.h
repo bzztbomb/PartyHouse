@@ -80,9 +80,11 @@ public:
   {
     return *mTexIterator;
   }
-//private:
-  std::vector<QuadSurface>& mSurfaces;
+public:
+  // HACKS
   std::vector<QuadSurface>::iterator mSurfaceIterator;
+private:
+  std::vector<QuadSurface>& mSurfaces;
   std::vector<cinder::Vec2f>::iterator mTexIterator;
   GetIterator mGetBegin;
   GetIterator mGetEnd;

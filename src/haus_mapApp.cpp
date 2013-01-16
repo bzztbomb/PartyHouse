@@ -54,7 +54,6 @@ struct WindowState
   EditorViewport mInputViewport;
   ControlPoints<SurfaceCoordIterator> mInputPoints;
   
-  Vec2f* mActiveInputPoint;
   Vec2f* mActiveOutputPoint;
   Vec2f mDragStart;
   OutputEditMode mOutputEditMode;
@@ -119,6 +118,15 @@ struct WindowState
   void unselectPt(SurfaceCoordIterator p)
   {
     
+  }
+  
+  void selectSurfaceTex(vector<QuadSurface>::iterator s)
+  {
+    for (auto i = s->mesh.getTexCoords().begin(); i != s->mesh.getTexCoords().end(); i++)
+    {
+      mInputPoints.select(SurfaceCoordIterator(mSurfaces, s, i, std::bind(&WindowState::getTexBegin, this, std::_1),
+                                             std::bind(&WindowState::getTexEnd, this, std::_1)));
+    }
   }
 };
 
@@ -457,6 +465,20 @@ void haus_mapApp::mouseDown( MouseEvent event )
   data->mDragStart = ev_pos;
   for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
   {
+    if (data->mAppMode == amEditInput)
+    {
+      if (data->mActiveSurface == NULL)
+      {
+        const Vec2f unit_pos = data->mInputViewport.VPtoUnit(ev_pos);
+        PolyLine2f points = surf->mesh.getTexCoords();
+        if (points.contains(unit_pos))
+        {
+          data->mActiveSurface = &*surf;
+          data->selectSurfaceTex(surf);
+        }
+      }
+    }
+    
     if (data->mAppMode == amEditOutput)
     {
       for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
