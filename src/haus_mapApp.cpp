@@ -14,6 +14,9 @@
 #include "color_block_layer.h"
 #include "roof_layer.h"
 #include "vu_layer.h"
+#include "EditorViewport.h"
+#include "ControlPoints.h"
+#include "surfaceCoordIterator.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -41,28 +44,81 @@ enum OutputEditMode
 struct WindowState
 {
   AppMode mAppMode;
+  QuadSurface* mActiveSurface;
+  
+  ci::app::WindowRef mWindow;
+  
+  // Global state
+  std::vector<QuadSurface>& mSurfaces;
+  
+  EditorViewport mInputViewport;
+  ControlPoints<SurfaceCoordIterator> mInputPoints;
+  
   Vec2f* mActiveInputPoint;
   Vec2f* mActiveOutputPoint;
-  QuadSurface* mActiveSurface;
   Vec2f mDragStart;
   OutputEditMode mOutputEditMode;
   
-  WindowState() :
+  WindowState(const ci::app::WindowRef& window, std::vector<QuadSurface>& surfaces) :
     mAppMode(amEditInput),
-    mActiveInputPoint(NULL),
+    mWindow(window),
+    mSurfaces(surfaces),
     mActiveOutputPoint(NULL),
     mActiveSurface(NULL),
     mDragStart(0.0f, 0.0f),
-    mOutputEditMode(oemStandard)
+    mOutputEditMode(oemStandard),
+    mInputPoints(std::bind(&WindowState::getSurfaceTexBegin, this),
+                 std::bind(&WindowState::getSurfaceTexEnd, this),
+                 std::bind(&WindowState::selectPt, this, std::_1),
+                 std::bind(&WindowState::unselectPt, this, std::_1))
   {
-    
+    mInputViewport.setWindow(mWindow);
+    mInputViewport.setViewportStyle(EditorViewport::EV_FULLSCREEN);
+    mInputPoints.setVP(&mInputViewport);
   }
   
   void clearActive()
   {
-    mActiveInputPoint = NULL;
     mActiveOutputPoint = NULL;
     mActiveSurface = NULL;
+  }
+  
+  vector<Vec2f>::iterator getTexBegin(QuadSurface& s)
+  {
+    return s.mesh.getTexCoords().begin();
+  }
+  
+  vector<Vec2f>::iterator getTexEnd(QuadSurface& s)
+  {
+    return s.mesh.getTexCoords().end();
+  }
+  
+  SurfaceCoordIterator getSurfaceTexBegin()
+  {
+    return SurfaceCoordIterator(mSurfaces, mSurfaces.begin(),
+                                   mSurfaces.begin() != mSurfaces.end() ?
+                                   mSurfaces.begin()->mesh.getTexCoords().begin() : vector<Vec2f>::iterator(),
+                                   std::bind(&WindowState::getTexBegin, this, std::_1),
+                                   std::bind(&WindowState::getTexEnd, this, std::_1)
+                                   );
+  }
+
+  SurfaceCoordIterator getSurfaceTexEnd()
+  {
+    return SurfaceCoordIterator(mSurfaces, mSurfaces.end(),
+      mSurfaces.begin() != mSurfaces.end() ? mSurfaces.rbegin()->mesh.getTexCoords().end() : vector<Vec2f>::iterator(),
+      std::bind(&WindowState::getTexBegin, this, std::_1),
+      std::bind(&WindowState::getTexEnd, this, std::_1));
+  }
+  
+  void selectPt(SurfaceCoordIterator p)
+  {
+    mActiveSurface = &(*p.mSurfaceIterator);
+  }
+
+  void unselectPt(SurfaceCoordIterator p)
+  {
+    
   }
 };
 
@@ -110,9 +166,6 @@ private:
 //
 // Main app
 //
-
-const float HANDLE_SIZE = 8.0f;
-
 haus_mapApp::haus_mapApp()
 {
   
@@ -127,7 +180,7 @@ void haus_mapApp::prepareSettings(Settings* settings)
 void haus_mapApp::setup()
 {
   addSurface();
-  getWindow()->setUserData( new WindowState );
+  getWindow()->setUserData( new WindowState(getWindow(), mSurfaces) );
 }
 
 void haus_mapApp::resize( )
@@ -254,6 +307,8 @@ void haus_mapApp::keyDown( KeyEvent event )
       data->mAppMode++;
       if (data->mAppMode == amCount)
         data->mAppMode = amEditInput;
+      
+      data->mInputViewport.setEnabled(data->mAppMode == amEditInput);
     }
       break;
     case KeyEvent::KEY_f :
@@ -336,7 +391,7 @@ void haus_mapApp::keyDown( KeyEvent event )
     {
       if (mSurfaces.size() > 0)
       {
-        RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+        RoofLayer* rl = new RoofLayer(&(*mSurfaces.begin()));
         rl->testPattern();
         addLayer(rl);
       }
@@ -346,7 +401,7 @@ void haus_mapApp::keyDown( KeyEvent event )
     {
       if (mSurfaces.size() > 0)
       {
-        RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+        RoofLayer* rl = new RoofLayer(&(*mSurfaces.begin()));
         rl->scanPattern();
         addLayer(rl);
       }
@@ -356,7 +411,7 @@ void haus_mapApp::keyDown( KeyEvent event )
     {
       if (mSurfaces.size() > 0)
       {
-        RoofLayer* rl = new RoofLayer(&mSurfaces[0]);
+        RoofLayer* rl = new RoofLayer(&(*mSurfaces.begin()));
         rl->sinPattern();
         addLayer(rl);
       }
@@ -402,25 +457,6 @@ void haus_mapApp::mouseDown( MouseEvent event )
   data->mDragStart = ev_pos;
   for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
   {
-    if (data->mAppMode == amEditInput)
-    {
-      for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
-      {
-        Vec2f v = surfToEditor(*i) - ev_pos;
-        if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
-        {
-          data->mActiveInputPoint = &*i;
-          data->mActiveSurface = &*surf;
-        }
-      }
-      if (data->mActiveSurface == NULL)
-      {
-        PolyLine2f points = surfToEditor(surf->mesh.getTexCoords());
-        if (points.contains(ev_pos))
-          data->mActiveSurface = &*surf;
-      }
-    }
-    
     if (data->mAppMode == amEditOutput)
     {
       for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
@@ -446,26 +482,6 @@ void haus_mapApp::mouseDrag(MouseEvent event)
 {
   WindowState *data = getWindow()->getUserData<WindowState>();
   mInputRect = getWindowBounds();
-  
-  if (data->mAppMode == amEditInput)
-  {
-    if (data->mActiveInputPoint)
-    {
-      *data->mActiveInputPoint = editorToSurf(Vec2f(event.getX(), event.getY()));
-    } else {
-      if (data->mActiveSurface)
-      {
-        Vec2f cur_pos = Vec2f(event.getX(), event.getY());
-        Vec2f diff_ss = cur_pos - data->mDragStart;
-        Vec2f diff = editorToSurf(diff_ss);
-        data->mDragStart = cur_pos;
-        for (auto i = data->mActiveSurface->mesh.getTexCoords().begin(); i != data->mActiveSurface->mesh.getTexCoords().end(); i++)
-        {
-          *i += diff;
-        }
-      }
-    }
-  }
   
   if (data->mAppMode == amEditOutput)
   {
@@ -537,8 +553,11 @@ void haus_mapApp::draw()
   //
   if (data->mAppMode == amEditInput)
   {
+    data->mInputViewport.prepareForRender(true);
     gl::color(Color::white());
-    gl::draw(mFrame.getTexture(), mInputRect);
+    const Area a = data->mInputViewport.getViewport();
+    Rectf r(0, 0, a.getWidth(), a.getHeight());
+    gl::draw(mFrame.getTexture(), r);
     
     // Surfaces
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
@@ -550,15 +569,9 @@ void haus_mapApp::draw()
       else
         gl::color(1.0f, 1.0f, 1.0f);
       gl::draw(quad0);
-      for (auto i = surf->mesh.getTexCoords().begin(); i != surf->mesh.getTexCoords().end(); i++)
-      {
-        if (&*i != data->mActiveInputPoint)
-          gl::color(1.0f, 1.0f, 0.0f);
-        else
-          gl::color(1.0f, 0.0f, 0.0f);
-        gl::drawSolidCircle(surfToEditor(*i), HANDLE_SIZE);
-      }
     }
+    
+    data->mInputPoints.render();
   }
   
   if ((data->mAppMode == amPresent) || (data->mAppMode == amEditOutput))
@@ -617,7 +630,7 @@ void haus_mapApp::autoVert()
 void haus_mapApp::createNewWindow()
 {
 	app::WindowRef newWindow = createWindow( Window::Format().size( 640, 480 ) );
-	newWindow->setUserData( new WindowState );
+	newWindow->setUserData( new WindowState( newWindow, mSurfaces ) );
 }
 
 //

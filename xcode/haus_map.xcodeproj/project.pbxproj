@@ -19,6 +19,8 @@
 		5323E6B60EAFCA7E003A9687 /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B50EAFCA7E003A9687 /* QTKit.framework */; };
 		53E3CDFC0E86099300238D2B /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53E3CDFB0E86099300238D2B /* Carbon.framework */; };
 		8D11072F0486CEB800E47090 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		C87309E516A483CD00E613D6 /* ControlPoints.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C87309E116A483CD00E613D6 /* ControlPoints.cpp */; };
+		C87309E616A483CD00E613D6 /* EditorViewport.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C87309E316A483CD00E613D6 /* EditorViewport.cpp */; };
 		C8CC86CF167D391E0033B7AB /* image_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86CE167D391E0033B7AB /* image_layer.cpp */; };
 		C8CC86D2167D39AA0033B7AB /* movie_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */; };
 		C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */; };
@@ -45,6 +47,11 @@
 		53E3CDFB0E86099300238D2B /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = /System/Library/Frameworks/Carbon.framework; sourceTree = "<absolute>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8D1107320486CEB800E47090 /* haus_map.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = haus_map.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C85BFC7616A6045E00EFB14F /* surfaceCoordIterator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = surfaceCoordIterator.h; path = ../src/surfaceCoordIterator.h; sourceTree = "<group>"; };
+		C87309E116A483CD00E613D6 /* ControlPoints.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ControlPoints.cpp; path = ../src/ControlPoints.cpp; sourceTree = "<group>"; };
+		C87309E216A483CD00E613D6 /* ControlPoints.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ControlPoints.h; path = ../src/ControlPoints.h; sourceTree = "<group>"; };
+		C87309E316A483CD00E613D6 /* EditorViewport.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EditorViewport.cpp; path = ../src/EditorViewport.cpp; sourceTree = "<group>"; };
+		C87309E416A483CD00E613D6 /* EditorViewport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = EditorViewport.h; path = ../src/EditorViewport.h; sourceTree = "<group>"; };
 		C8CC86CA167D38380033B7AB /* layer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = layer.h; path = ../src/layer.h; sourceTree = "<group>"; };
 		C8CC86CB167D38840033B7AB /* quad.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = quad.h; path = ../src/quad.h; sourceTree = "<group>"; };
 		C8CC86CD167D39140033B7AB /* image_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = image_layer.h; path = ../src/image_layer.h; sourceTree = "<group>"; };
@@ -83,6 +90,12 @@
 		080E96DDFE201D6D7F000001 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				C87309E116A483CD00E613D6 /* ControlPoints.cpp */,
+				C87309E316A483CD00E613D6 /* EditorViewport.cpp */,
+				C8CC86DD167EC2500033B7AB /* vu_layer.cpp */,
+				C8CC86D6167D43C70033B7AB /* roof_layer.cpp */,
+				C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */,
+				C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */,
 				C8CC86CE167D391E0033B7AB /* image_layer.cpp */,
 				00BAE6590E7ED9C10018A608 /* haus_mapApp.cpp */,
 			);
@@ -127,14 +140,7 @@
 		29B97314FDCFA39411CA2CEA /* haus_map */ = {
 			isa = PBXGroup;
 			children = (
-				C8CC86DD167EC2500033B7AB /* vu_layer.cpp */,
-				C8CC86DE167EC2500033B7AB /* vu_layer.h */,
-				C8CC86D6167D43C70033B7AB /* roof_layer.cpp */,
-				C8CC86D7167D43C70033B7AB /* roof_layer.h */,
-				C8CC86D3167D3B930033B7AB /* color_block_layer.cpp */,
-				C8CC86D4167D3B930033B7AB /* color_block_layer.h */,
-				C8CC86D0167D39AA0033B7AB /* movie_layer.cpp */,
-				C8CC86D1167D39AA0033B7AB /* movie_layer.h */,
+				C85BFC7616A6045E00EFB14F /* surfaceCoordIterator.h */,
 				29B97315FDCFA39411CA2CEA /* Headers */,
 				080E96DDFE201D6D7F000001 /* Source */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -147,7 +153,13 @@
 		29B97315FDCFA39411CA2CEA /* Headers */ = {
 			isa = PBXGroup;
 			children = (
+				C87309E216A483CD00E613D6 /* ControlPoints.h */,
+				C87309E416A483CD00E613D6 /* EditorViewport.h */,
+				C8CC86DE167EC2500033B7AB /* vu_layer.h */,
 				C8CC86CD167D39140033B7AB /* image_layer.h */,
+				C8CC86D7167D43C70033B7AB /* roof_layer.h */,
+				C8CC86D4167D3B930033B7AB /* color_block_layer.h */,
+				C8CC86D1167D39AA0033B7AB /* movie_layer.h */,
 				C8CC86CA167D38380033B7AB /* layer.h */,
 				C8CC86CB167D38840033B7AB /* quad.h */,
 				32CA4F630368D1EE00C91783 /* haus_map_Prefix.pch */,
@@ -237,6 +249,8 @@
 				C8CC86D5167D3B930033B7AB /* color_block_layer.cpp in Sources */,
 				C8CC86D8167D43C70033B7AB /* roof_layer.cpp in Sources */,
 				C8CC86DF167EC2500033B7AB /* vu_layer.cpp in Sources */,
+				C87309E516A483CD00E613D6 /* ControlPoints.cpp in Sources */,
+				C87309E616A483CD00E613D6 /* EditorViewport.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
