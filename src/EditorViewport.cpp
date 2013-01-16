@@ -14,7 +14,8 @@ EditorViewport::EditorViewport() :
   mZoomFactor(1.0f),
   mTranslate(Vec2f::zero()),
   mStyle(EV_FULLSCREEN),
-  mEnabled(true)
+  mEnabled(true),
+  mDomain(ED_UNIT)
 {
   
 }
@@ -41,12 +42,13 @@ void EditorViewport::setTranslate(const Vec2f& offset)
 
 void EditorViewport::updateTransforms()
 {
+  const Vec2f domain = (mDomain == ED_UNIT) ? Vec2f(mViewport.getWidth(), mViewport.getHeight()) : Vec2f(1.0f, 1.0f);
   mUnitToVP = MatrixAffine2f::makeTranslate(mTranslate);
-  mUnitToVP.scale(mViewport.getSize() * mZoomFactor);
+  mUnitToVP.scale(domain * mZoomFactor);
 
   // I'm doing this instead of a matrix invert to avoid
   // potential fp issues.
-  Vec2f invSize(mViewport.getSize());
+  Vec2f invSize(domain);
   invSize.x = 1.0f / invSize.x;
   invSize.y = 1.0f / invSize.y;
   Vec2f invTranslate(mTranslate * -1.0f);

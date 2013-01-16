@@ -25,9 +25,18 @@ public:
     EV_FULLSCREEN,
     EV_CUSTOM
   };
+  
+  enum EditorDomain
+  {
+    ED_UNIT,
+    ED_PIXEL
+  };
+  
   EditorViewport();
   
   void setViewportStyle(EditorViewportStyle style) { mStyle = style; resize(); }
+  void setDomain(EditorDomain domain) { mDomain = domain; }
+  
   // Sets a custom viewport for the editor
   void setVP(const cinder::Area& vp);
   cinder::Area getViewport() { return mViewport; }
@@ -56,6 +65,7 @@ public:
 private:
   cinder::app::WindowRef mWindow;
   EditorViewportStyle mStyle;
+  EditorDomain mDomain;
   cinder::Area mViewport;
   
   float mZoomFactor;

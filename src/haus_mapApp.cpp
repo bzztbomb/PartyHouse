@@ -53,6 +53,9 @@ struct WindowState
   
   EditorViewport mInputViewport;
   ControlPoints<SurfaceCoordIterator> mInputPoints;
+
+  EditorViewport mOutputViewport;
+  ControlPoints<SurfaceCoordIterator> mOutputPoints;
   
   Vec2f* mActiveOutputPoint;
   Vec2f mDragStart;
@@ -62,23 +65,30 @@ struct WindowState
     mAppMode(amEditInput),
     mWindow(window),
     mSurfaces(surfaces),
-    mActiveOutputPoint(NULL),
     mActiveSurface(NULL),
-    mDragStart(0.0f, 0.0f),
     mOutputEditMode(oemStandard),
     mInputPoints(std::bind(&WindowState::getSurfaceTexBegin, this),
                  std::bind(&WindowState::getSurfaceTexEnd, this),
+                 std::bind(&WindowState::selectPt, this, std::_1),
+                 std::bind(&WindowState::unselectPt, this, std::_1)),
+    mOutputPoints(std::bind(&WindowState::getSurfaceVertBegin, this),
+                 std::bind(&WindowState::getSurfaceVertEnd, this),
                  std::bind(&WindowState::selectPt, this, std::_1),
                  std::bind(&WindowState::unselectPt, this, std::_1))
   {
     mInputViewport.setWindow(mWindow);
     mInputViewport.setViewportStyle(EditorViewport::EV_FULLSCREEN);
     mInputPoints.setVP(&mInputViewport);
+    
+    mOutputViewport.setWindow(mWindow);
+    mOutputViewport.setViewportStyle(EditorViewport::EV_FULLSCREEN);
+    mOutputViewport.setDomain(EditorViewport::ED_PIXEL);
+    mOutputPoints.setVP(&mOutputViewport);
+    mOutputViewport.setEnabled(false);
   }
   
   void clearActive()
   {
-    mActiveOutputPoint = NULL;
     mActiveSurface = NULL;
   }
   
@@ -108,6 +118,34 @@ struct WindowState
       mSurfaces.begin() != mSurfaces.end() ? mSurfaces.rbegin()->mesh.getTexCoords().end() : vector<Vec2f>::iterator(),
       std::bind(&WindowState::getTexBegin, this, std::_1),
       std::bind(&WindowState::getTexEnd, this, std::_1));
+  }
+
+  vector<Vec2f>::iterator getVertBegin(QuadSurface& s)
+  {
+    return s.mesh.getVertices().begin();
+  }
+  
+  vector<Vec2f>::iterator getVertEnd(QuadSurface& s)
+  {
+    return s.mesh.getVertices().end();
+  }
+
+  SurfaceCoordIterator getSurfaceVertBegin()
+  {
+    return SurfaceCoordIterator(mSurfaces, mSurfaces.begin(),
+                                mSurfaces.begin() != mSurfaces.end() ?
+                                mSurfaces.begin()->mesh.getVertices().begin() : vector<Vec2f>::iterator(),
+                                std::bind(&WindowState::getVertBegin, this, std::_1),
+                                std::bind(&WindowState::getVertEnd, this, std::_1)
+                                );
+  }
+  
+  SurfaceCoordIterator getSurfaceVertEnd()
+  {
+    return SurfaceCoordIterator(mSurfaces, mSurfaces.end(),
+                                mSurfaces.begin() != mSurfaces.end() ? mSurfaces.rbegin()->mesh.getVertices().end() : vector<Vec2f>::iterator(),
+                                std::bind(&WindowState::getVertBegin, this, std::_1),
+                                std::bind(&WindowState::getVertEnd, this, std::_1));
   }
   
   void selectPt(SurfaceCoordIterator p)
@@ -151,10 +189,7 @@ private:
   gl::Fbo mFrame;
   vector<Layer*> mCurrentLayers;
   
-  PolyLine<Vec2f> surfToEditor(const PolyLine<Vec2f>& input);
-  Vec2f surfToEditor(const Vec2f& input);
-  Rectf editorToSurf(const Rectf& input);
-  Vec2f editorToSurf(const Vec2f& input);
+  PolyLine<Vec2f> surfToEditor(const std::vector<Vec2f>& input, EditorViewport* e);
   
   void autoVert();
   
@@ -317,6 +352,7 @@ void haus_mapApp::keyDown( KeyEvent event )
         data->mAppMode = amEditInput;
       
       data->mInputViewport.setEnabled(data->mAppMode == amEditInput);
+      data->mOutputViewport.setEnabled(data->mAppMode == amEditOutput);
     }
       break;
     case KeyEvent::KEY_f :
@@ -481,15 +517,6 @@ void haus_mapApp::mouseDown( MouseEvent event )
     
     if (data->mAppMode == amEditOutput)
     {
-      for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
-      {
-        Vec2f v = *i - ev_pos;
-        if (v.lengthSquared() < HANDLE_SIZE*HANDLE_SIZE)
-        {
-          data->mActiveOutputPoint = &*i;
-          data->mActiveSurface = &*surf;
-        }
-      }
       if (data->mActiveSurface == NULL)
       {
         PolyLine2f points = surf->mesh.getVertices();
@@ -502,39 +529,6 @@ void haus_mapApp::mouseDown( MouseEvent event )
 
 void haus_mapApp::mouseDrag(MouseEvent event)
 {
-  WindowState *data = getWindow()->getUserData<WindowState>();
-  mInputRect = getWindowBounds();
-  
-  if (data->mAppMode == amEditOutput)
-  {
-    if (data->mActiveOutputPoint)
-    {
-      *data->mActiveOutputPoint = Vec2f(event.getX(), event.getY());
-    } else {
-      if (data->mOutputEditMode == oemStandard)
-      {
-        if (data->mActiveSurface)
-        {
-          Vec2f cur_pos = Vec2f(event.getX(), event.getY());
-          Vec2f diff_ss = cur_pos - data->mDragStart;
-          data->mDragStart = cur_pos;
-          for (auto i = data->mActiveSurface->mesh.getVertices().begin(); i != data->mActiveSurface->mesh.getVertices().end(); i++)
-          {
-            *i += diff_ss;
-          }
-        }
-      } else {
-        Vec2f cur_pos = Vec2f(event.getX(), event.getY());
-        Vec2f diff_ss = cur_pos - data->mDragStart;
-        data->mDragStart = cur_pos;
-        for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
-        {
-          int index = ((int) data->mOutputEditMode) - 1;
-          surf->mesh.getVertices()[index] += diff_ss;
-        }
-      }
-    }
-  }
 }
 
 void haus_mapApp::mouseUp( MouseEvent event )
@@ -582,10 +576,11 @@ void haus_mapApp::draw()
     gl::draw(mFrame.getTexture(), r);
     
     // Surfaces
+    data->mInputViewport.prepareForRender(false);
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
       // Texture coords
-      PolyLine<Vec2f> quad0 = surfToEditor(surf->mesh.getTexCoords());
+      PolyLine<Vec2f> quad0 = surfToEditor(surf->mesh.getTexCoords(), &data->mInputViewport);
       if (&*surf == data->mActiveSurface)
         gl::color(0.0f, 1.0f, 1.0f);
       else
@@ -598,6 +593,8 @@ void haus_mapApp::draw()
   
   if ((data->mAppMode == amPresent) || (data->mAppMode == amEditOutput))
   {
+    if (data->mAppMode == amEditOutput)
+      data->mOutputViewport.prepareForRender(true);
     // Output mesh
     for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
     {
@@ -621,16 +618,8 @@ void haus_mapApp::draw()
       else
         gl::color(1.0f, 1.0f, 1.0f);
       gl::draw(quad0);
-      
-      for (auto i = surf->mesh.getVertices().begin(); i != surf->mesh.getVertices().end(); i++)
-      {
-        if (&*i != data->mActiveOutputPoint)
-          gl::color(1.0f, 1.0f, 0.0f);
-        else
-          gl::color(1.0f, 0.0f, 0.0f);
-        gl::drawSolidCircle(*i, HANDLE_SIZE);
-      }
     }
+    data->mOutputPoints.render();
   }
 }
 
@@ -673,42 +662,16 @@ void haus_mapApp::addLayer(Layer* layer)
 }
 
 //
-// Coordinate xforming
+// Coordinate/data structure xforming
 //
-Vec2f haus_mapApp::surfToEditor(const Vec2f& input)
-{
-  Vec2f v;
-  v.x = input.x * (mInputRect.x2 - mInputRect.x1) + mInputRect.x1;
-  v.y = input.y * (mInputRect.y2 - mInputRect.y1) + mInputRect.y1;
-  return v;
-}
-
-PolyLine<Vec2f> haus_mapApp::surfToEditor(const PolyLine<Vec2f>& input)
+PolyLine<Vec2f> haus_mapApp::surfToEditor(const std::vector<Vec2f>& input, EditorViewport* e)
 {
   PolyLine<Vec2f> result;
   for (auto i = input.begin(); i != input.end(); i++)
   {
-    result.push_back(surfToEditor(*i));
+    result.push_back(e->unitToVP(*i));
   }
   result.setClosed();
-  return result;
-}
-
-Vec2f haus_mapApp::editorToSurf(const Vec2f& input)
-{
-  Vec2f result;
-  result.x = (input.x - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-  result.y = (input.y - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
-  return result;
-}
-
-Rectf haus_mapApp::editorToSurf(const Rectf& input)
-{
-  Rectf result;
-  result.x1 = (input.x1 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-  result.x2 = (input.x2 - mInputRect.x1) / (mInputRect.x2 - mInputRect.x1);
-  result.y1 = (input.y1 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
-  result.y2 = (input.y2 - mInputRect.y1) / (mInputRect.y2 - mInputRect.y1);
   return result;
 }
 
