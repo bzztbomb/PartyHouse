@@ -37,12 +37,13 @@ Keyboard shortcuts are:
 * "7" dancers movie
 * "8" mid section vu meter
 * "9" mice movie
+* "w" create another window
 * Space bar change colors
 
 ## Code
 The basic flow is the app renders to an offscreen FBO in hausmap_App::update, then uses that to render the output objects in hausmap_App::render.  Maybe not efficient, but allows for easy compositing. ;)
 
-The code also relies on the wonderful Cinder library.  Clone it from https://github.com/cinder/Cinder and update the CINDER_PATH variable in the xcode project. 
+The code also relies on the wonderful Cinder library.  Clone it from https://github.com/cinder/Cinder and update the CINDER_PATH variable in the xcode project.  Grab the appRewrite branch (soon to be Cinder 0.85).  I think ControlPoints.h and EditorViewport.* are the beginnings of a framework to create quick editors. 
 
 Also, I've only tested/built this with XCode.   The Visual Studio projects have not been updated, but I imagine the code would work on Windows without a lot of pain.
 

@@ -32,15 +32,6 @@ enum AppMode
   amCount,
 };
 
-enum OutputEditMode
-{
-  oemStandard,
-  oemLowerLeft = 1,
-  oemUpperLeft = 2,
-  oemUpperRight = 3,
-  oemLowerRight = 4,
-};
-
 struct WindowState
 {
   AppMode mAppMode;
@@ -57,16 +48,11 @@ struct WindowState
   EditorViewport mOutputViewport;
   ControlPoints<SurfaceCoordIterator> mOutputPoints;
   
-  Vec2f* mActiveOutputPoint;
-  Vec2f mDragStart;
-  OutputEditMode mOutputEditMode;
-  
   WindowState(const ci::app::WindowRef& window, std::vector<QuadSurface>& surfaces) :
     mAppMode(amEditInput),
     mWindow(window),
     mSurfaces(surfaces),
     mActiveSurface(NULL),
-    mOutputEditMode(oemStandard),
     mInputPoints(std::bind(&WindowState::getSurfaceTexBegin, this),
                  std::bind(&WindowState::getSurfaceTexEnd, this),
                  std::bind(&WindowState::selectPt, this, std::_1),
@@ -90,6 +76,8 @@ struct WindowState
   void clearActive()
   {
     mActiveSurface = NULL;
+    mInputPoints.clearSelection();
+    mOutputPoints.clearSelection();
   }
   
   vector<Vec2f>::iterator getTexBegin(QuadSurface& s)
@@ -176,8 +164,6 @@ public:
   void resize( );
   void keyDown( KeyEvent event );
   void mouseDown( MouseEvent event );
-  void mouseDrag(MouseEvent event);
-  void mouseUp( MouseEvent event );
   void update();
   void draw();
   void prepareSettings(Settings* settings);
@@ -311,6 +297,13 @@ void haus_mapApp::saveSurfaces(const fs::path& surf_path)
 void haus_mapApp::loadSurfaces(const fs::path& surf_path)
 {
   mSurfaces.clear();
+  for (size_t i = 0; i < getNumWindows(); i++)
+  {
+    WindowRef w = getWindowIndex(i);
+    WindowState *data = getWindow()->getUserData<WindowState>();
+    data->clearActive();
+  }
+  
   DataSourceRef ds = DataSourcePath::create(surf_path);
   IStreamRef stream = ds->createStream();
   
@@ -389,26 +382,7 @@ void haus_mapApp::keyDown( KeyEvent event )
       deleteCurrentSurface();
     }
       break;
-    case KeyEvent::KEY_LEFTBRACKET :
-    {
-      data->mOutputEditMode = (data->mOutputEditMode == oemStandard) ? oemUpperLeft : oemStandard;
-    }
-      break;
-    case KeyEvent::KEY_RIGHTBRACKET :
-    {
-      data->mOutputEditMode = (data->mOutputEditMode == oemStandard) ? oemUpperRight : oemStandard;
-    }
-      break;
-    case KeyEvent::KEY_SEMICOLON :
-    {
-      data->mOutputEditMode = (data->mOutputEditMode == oemStandard) ? oemLowerLeft : oemStandard;
-    }
-      break;
-    case KeyEvent::KEY_QUOTE :
-    {
-      data->mOutputEditMode = (data->mOutputEditMode == oemStandard) ? oemLowerRight : oemStandard;
-    }
-      break;
+
     case KeyEvent::KEY_c :
     {
       clearLayers();
@@ -498,7 +472,6 @@ void haus_mapApp::mouseDown( MouseEvent event )
 
   data->clearActive();
   const Vec2f ev_pos(event.getX(), event.getY());
-  data->mDragStart = ev_pos;
   for (auto surf = mSurfaces.begin(); surf != mSurfaces.end(); surf++)
   {
     if (data->mAppMode == amEditInput)
@@ -525,14 +498,6 @@ void haus_mapApp::mouseDown( MouseEvent event )
       }
     }
   }
-}
-
-void haus_mapApp::mouseDrag(MouseEvent event)
-{
-}
-
-void haus_mapApp::mouseUp( MouseEvent event )
-{
 }
 
 void haus_mapApp::update()
